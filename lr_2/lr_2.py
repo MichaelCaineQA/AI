@@ -4,30 +4,35 @@ import numpy as np
 
 class Hebb:
     def __init__(self):
-        self.synapses = []
-        self.a = 0.3
-        self.training_result = None # Ожидаемая активность выходного нейрона при полном соответствии образа
+        self.weights = []
+        self.learning_coff = 0.3
+        self.training_result = 0 # Ожидаемая активность выходного нейрона при полном соответствии образа
         self.neural_network = self.init_neural_network()
 
     def init_neural_network(self):
         i = [Neuron(f"1.{idx}") for idx in range(3)] # Входной слой из 3 нейронов
         j = [Neuron(f"2.{idx}") for idx in range(2)] # Промежуточный слой из 2 нейронов
         for neuron_i in i:
-            neuron_i.create_synapses_with_next_layer(j, self.synapses) # Установление между ними весов
+            neuron_i.fill_weights(j, self.weights) # Установление между ними весов
         return [i, j]
 
     def set_input(self, entry):
-        for idx, neuron in enumerate(self.neural_network[0]):
-            neuron.set_in(entry[idx]) # Определяем вход нейрона
+        for neuron_id, neuron in enumerate(self.neural_network[0]):
+            neuron.set_in(entry[neuron_id]) # Определяем вход нейрона
 
     def train(self, input_data):
         print(f"Training neural network for image: {input_data}")
         self.set_input(input_data)
-        for i in range(1, 1001):
-            print(f"====== ITERATION #{i} ======")
+        epochs = 1000
+        for i in range(epochs):
+            if i % 100 == 0:
+                print(f"Epoch №{i+1}")
+                print(f"Weights are:")
+                for weight in self.weights:
+                    print(f"{weight}")
             self.iterate()
-            self.update_synapses()
-            if i == 1000:
+            self.update_weights()
+            if i == 999:
                 self.training_result = self.neural_network[-1][0].out
             self.reset_all_neurons()
 
@@ -38,11 +43,9 @@ class Hebb:
                 neuron.out = 0
 
     # Обновить веса
-    def update_synapses(self):
-        print("====== UPDATE SYNAPSES WEIGHT ======")
-        for synapse in self.synapses:
-            synapse.w_ij += self.a * synapse.neuron_i.out * synapse.neuron_j.out
-            print(f"====== CURRENT SYNAPSE (i): {synapse} ======")
+    def update_weights(self):
+        for weight in self.weights:
+            weight.w_ij += self.learning_coff * weight.neuron_i.out * weight.neuron_j.out
 
     def iterate(self):
         local_neural_network = list(self.neural_network)
@@ -52,7 +55,7 @@ class Hebb:
             for neuron_i in layer:
                 neuron_i.out = 0
                 neuron_i.get_result()
-                neuron_synapses = [synapse for synapse in self.synapses if synapse.neuron_i == neuron_i]
+                neuron_synapses = [synapse for synapse in self.weights if synapse.neuron_i == neuron_i]
                 for neuron_synapse in neuron_synapses:
                     neuron_j = neuron_synapse.neuron_j
                     neuron_j.in_value = neuron_i.out
@@ -85,23 +88,23 @@ class Neuron:
     def set_in(self, in_value):
         self.in_value = in_value
 
-    def create_synapses_with_next_layer(self, next_layer, synapses):
+    def fill_weights(self, next_layer, weights):
         for next_neuron in next_layer:
-            synapses.append(Synapse(self, next_neuron, (random.uniform(0.1, 0.4) * 0.3)))
+            weights.append(Weight(self, next_neuron, (random.uniform(0.1, 0.4) * 0.3)))
 
     def get_result(self):
         self.out = self.in_value * self.w
         return self.out
 
 
-class Synapse:
+class Weight:
     def __init__(self, neuron_i, neuron_j, w_ij):
         self.neuron_i = neuron_i
         self.neuron_j = neuron_j
         self.w_ij = w_ij
 
     def __str__(self):
-        return f"Synapse{{neuronI={self.neuron_i.name}, neuronJ={self.neuron_j.name}, wIJ={self.w_ij}}}"
+        return f"neuron I = {self.neuron_i.name}, neuronJ={self.neuron_j.name}, wIJ={self.w_ij}"
 
 
 if __name__ == "__main__":
@@ -109,7 +112,7 @@ if __name__ == "__main__":
     origin_image = [0, 1, 1]
     hebb.train(origin_image)
     training_result = hebb.get_training_result()
-    input_image = [0, 1, 1]
+    input_image = [1, 0, 0]
     result = hebb.get_result(input_image)
     eps = abs(training_result * 0.1)
     print(f"Actual result: {result}")
