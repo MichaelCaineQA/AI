@@ -1,24 +1,23 @@
 import random
-import numpy as np
 
 
 class Hebb:
     def __init__(self):
         self.weights = []
         self.learning_coff = 0.3
-        self.training_result = 0 # Ожидаемая активность выходного нейрона при полном соответствии образа
+        self.training_result = 0  # Ожидаемая активность выходного нейрона при полном соответствии образа
         self.neural_network = self.init_neural_network()
 
     def init_neural_network(self):
-        i = [Neuron(f"1.{idx}") for idx in range(3)] # Входной слой из 3 нейронов
-        j = [Neuron(f"2.{idx}") for idx in range(2)] # Промежуточный слой из 2 нейронов
+        i = [Neuron(f"1.{idx}") for idx in range(3)]  # Входной слой из 3 нейронов
+        j = [Neuron(f"2.{idx}") for idx in range(2)]  # Промежуточный слой из 2 нейронов
         for neuron_i in i:
-            neuron_i.fill_weights(j, self.weights) # Установление между ними весов
+            neuron_i.fill_weights(j, self.weights)  # Установление между ними весов
         return [i, j]
 
     def set_input(self, entry):
         for neuron_id, neuron in enumerate(self.neural_network[0]):
-            neuron.set_in(entry[neuron_id]) # Определяем вход нейрона
+            neuron.set_in(entry[neuron_id])  # Определяем вход нейрона
 
     def train(self, input_data):
         print(f"Training neural network for image: {input_data}")
@@ -26,7 +25,7 @@ class Hebb:
         epochs = 1000
         for i in range(epochs):
             if i % 100 == 0:
-                print(f"Epoch №{i+1}")
+                print(f"Epoch №{i + 1}")
                 print(f"Weights are:")
                 for weight in self.weights:
                     print(f"{weight}")
@@ -55,11 +54,12 @@ class Hebb:
             for neuron_i in layer:
                 neuron_i.out = 0
                 neuron_i.get_result()
-                neuron_synapses = [synapse for synapse in self.weights if synapse.neuron_i == neuron_i]
-                for neuron_synapse in neuron_synapses:
-                    neuron_j = neuron_synapse.neuron_j
+                neuron_weights = [weight for weight in self.weights if weight.neuron_i == neuron_i]
+                # активационная функция
+                for neuron_weight in neuron_weights:
+                    neuron_j = neuron_weight.neuron_j
                     neuron_j.in_value = neuron_i.out
-                    neuron_j.w = neuron_synapse.w_ij
+                    neuron_j.w = neuron_weight.w_ij
                     out = neuron_j.out
                     out += neuron_j.get_result()
                     neuron_j.out = out
@@ -74,6 +74,7 @@ class Hebb:
         print(f"Result neuron is: {neuron}")
         return neuron.out
 
+
     def get_training_result(self):
         return self.training_result
 
@@ -81,7 +82,7 @@ class Hebb:
 class Neuron:
     def __init__(self, name):
         self.name = name
-        self.w = random.uniform(0, 0.1) # Начальный вес нейрона от 0 до 0.1
+        self.w = random.uniform(0, 0.1)  # Начальный вес нейрона от 0 до 0.1
         self.in_value = 0
         self.out = 0
 
@@ -112,7 +113,7 @@ if __name__ == "__main__":
     origin_image = [0, 1, 1]
     hebb.train(origin_image)
     training_result = hebb.get_training_result()
-    input_image = [1, 0, 0]
+    input_image = [0, 1, 1]
     result = hebb.get_result(input_image)
     eps = abs(training_result * 0.1)
     print(f"Actual result: {result}")

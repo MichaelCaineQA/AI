@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # -*- coding: cp1251 -*-
 
-import sys
-from hopfield.parser import parse, parse_shape, SHAPE_SIDE
-
-import random
 import math
+import random
+import sys
+
+from hopfield.parser import parse, parse_shape, SHAPE_SIDE
 
 dictionary = {-1: '-', 1: '@'}
 
@@ -69,13 +69,13 @@ class HopfieldNet:
         self.Y = shape
         iter = 0
         # пока не совпадёт с одним из известных...
-        while (self.shapes.count(self.Y) == 0):
+        while self.shapes.count(self.Y) == 0:
             self.recstep()
             iter += 1
             # ... или количество безрезультатных итераций не истечёт
             if self.junkiter >= self.maxjunkiters:
-                return (False, self.Y, iter)
-        return (True, self.Y, iter)
+                return False, self.Y, iter
+        return True, self.Y, iter
 
     # Шаг распознования.
     # Случайно выбирается нейрон для обновления
@@ -114,8 +114,8 @@ def main(argv):
 
     print("Teaching...")
     hopfield = HopfieldNet(SHAPE_SIDE)
-    for o in shapes:
-        hopfield.teach(o)
+    for shp in shapes:
+        hopfield.teach(shp)
 
     print("Modified shape:")
     printshape(shape, SHAPE_SIDE)

@@ -46,8 +46,7 @@ class Tests(unittest.TestCase):
         print("High: ", gmdh.testGMDH([0.294, 2.828, 0.125, 0.205, 12712.210, 102701.833]))
         print("High: ", gmdh.testGMDH([2.944, 1.905, 0.650, 0.688, 22068.982, 180123.185]))
 
-
-        print("### TEST ###")
+        print("TEST")
         for line in open(os.path.join(PROJECT_ROOT, 'datafile_all.txt'), 'r').readlines():
             items = line.rstrip('\n').split(' ')
             class_name = items[0]
