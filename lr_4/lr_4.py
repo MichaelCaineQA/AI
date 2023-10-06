@@ -1,135 +1,109 @@
-#!/usr/bin/python
-# -*- coding: cp1251 -*-
+import numpy as np
 
-import sys
-from utils.parser import parse, parse_shape, SHAPE_SIDE
+from __future__ import with_statement
+import os
+import string
+from os.path import isdir, isfile
 
-import random
-import math
+MAX_SIZE = 512
+SHAPE_SIDE = 7
+dictionary = {'-': -1, '@': 1}
+SHAPES_PATH = "known_shapes"
+INPUT_PATH = "modified_shapes/modified.txt"
 
-dictionary = {-1: '-', 1: '@'}
+#
+# Считывает фигуры из файлов и возвращает
+# список из их элементов
+#
+def parse(dir):
+    shapes_files = []
+    for filename in os.listdir(dir):
+        path = os.path.join(dir, filename)
+        if isfile(path):
+            shapes_files.append(path)
 
-
-def cmp(a, b):
-    if a < b:
-        return -1
-    if a == b:
-        return 0
-    if a > b:
-        return 1
-
-
-def charfor(x):
-    return dictionary[x]
-
-
-def printshape(obraz, size):
-    i = 0
-    out_str = ""
-    for o in obraz:
-        out_str += str(charfor(o))
-        i += 1
-        if i % size == 0:
-            print(out_str)
-            out_str = ""
+    shapes = []
+    for path in shapes_files:
+        shape = parse_shape(path)
+        shapes.append(shape)
+    return shapes
 
 
-# Нейронная сеть Хопфилда
-class HopfieldNet:
+#
+# Считывает файл с фигурой и преобразует
+# в список
+#
+def parse_shape(path):
+    with open(path) as f:
+        contents = f.read(MAX_SIZE)
+        contents = contents.replace("\n", "")
+        contents = contents.replace("\r", "")
 
-    # Инициализация сети
-    def __init__(self, shapeside):
-        self.drawsteps = False
-        self.W = []  # матрица весовых коэффициентов
-        self.shapes = []  # образы, которым обучена сеть
-        self.neurons = int(math.pow(shapeside, 2))  # количество нейронов
-        self.shapeside = shapeside  # количество бит в стороне образа
-        r = range(0, self.neurons)
-        for i in r:
-            self.W.append([0 for x in r])
-        self.maxjunkiters = 200  # максимальное число безрезультатных итераций
-        self.junkiter = 0  # текущая безрезультатная итерация
-
-    # Обучение сети образу
-    def teach(self, shape):
-        self.shapes.append(shape)
-        self.X = shape
-        r = range(0, self.neurons)
-        for i in r:
-            for j in r:
-                if i == j:
-                    self.W[i][j] = 0
-                else:
-                    self.W[i][j] += self.X[i] * self.X[j]
-
-    #
-    # Распознать изменённый образ
-    #
-    def recognize(self, shape):
-        self.Y = shape
-        iter = 0
-        # пока не совпадёт с одним из известных...
-        while (self.shapes.count(self.Y) == 0):
-            self.recstep()
-            iter += 1
-            # ... или количество безрезультатных итераций не истечёт
-            if self.junkiter >= self.maxjunkiters:
-                return (False, self.Y, iter)
-        return (True, self.Y, iter)
-
-    # Шаг распознования.
-    # Случайно выбирается нейрон для обновления
-    def recstep(self):
-        signum = lambda x: cmp(x, 0)
-
-        r = random.randrange(0, self.neurons, 1)
-        net = 0
-        for i in range(0, self.neurons):
-            net += self.Y[i] * self.W[i][r]
-        signet = signum(net)
-        if signet != self.Y[r]:  # заменяем текущий нейрон
-            print(f"Neuron {r} : {self.Y[r]}  ->  {signet}")
-            self.Y[r] = signet
-            if self.drawsteps:
-                printshape(self.Y, self.shapeside)
-
-            self.junkiter = 0
-        else:
-            self.junkiter += 1
+        shape = []
+        for c in contents:
+            shape.append(dictionary[c])
+        if len(shape) != pow(SHAPE_SIDE, 2):
+            raise Exception("Shape size must be %gx%g" % (SHAPE_SIDE, SHAPE_SIDE))
+        return shape
 
 
-knows_shapes_dir = "known_shapes"
-modified_shape_path = "modified_shapes/modified.txt"
+class PotentialMethod:
+    def __init__(self):
+        self.shapes = parse(SHAPES_PATH)
+        self.input = parse(INPUT_PATH)[0]
+        self.Ps = [0.0] * len(self.shapes)
+
+    def get_result(self):
+        print("Input:")
+        print(self.input)
+
+        # Найти наибольший потенциал
+        max_p = -1
+        idx_max_p = -1
+        for i, p in enumerate(self.Ps):
+            if p > max_p:
+                max_p = p
+                idx_max_p = i
+
+        return self.shapes[idx_max_p]
+
+    def potential(self):
+        for i, shape in enumerate(self.shapes):
+            r = self.compare(self.input, shape)
+            self.Ps[i] += 1_000_000 / (1 + r ** 2)
+
+        print("Potentials:")
+        print(self.Ps)
+
+    def compare(self, b1, b2):
+        count = 0
+        assert len(b1) == len(b2)  # Размеры сравниваемых фигур равны
+        n = len(b1)
+        b1_pixels = self.to_pixels(b1)
+        b2_pixels = self.to_pixels(b2)
+
+        for i in range(n):
+            for j in range(n):
+                if b1_pixels[i][j] != b2_pixels[i][j]:
+                    count += 1
+
+        return count
+
+    def to_pixels(self, shape):
+        n = int(np.sqrt(len(shape)))
+        result = np.zeros((n, n), dtype=int)
+        k = 0
+        for i in range(n):
+            line_int = shape[k:k + n]
+            result[i] = line_int
+            k += n
+
+        return result
 
 
-# Главная функция
-def main(argv):
-    shapes = parse(knows_shapes_dir)
-    shape = parse_shape(modified_shape_path)
-
-    print("Known Shapes:")
-    for o in shapes:
-        printshape(o, SHAPE_SIDE)
-        print(o)
-
-    print("Teaching...")
-    hopfield = HopfieldNet(SHAPE_SIDE)
-    for o in shapes:
-        hopfield.teach(o)
-
-    print("Modified shape:")
-    printshape(shape, SHAPE_SIDE)
-
-    print("Shape recognizing...")
-    (recognized, recshape, iters) = hopfield.recognize(shape)
-
-    if recognized:
-        print("Success. Shape recognized in %g iterations:" % iters)
-    else:
-        print("Fail. Shape not recognized in %g iterations..." % iters)
-    printshape(recshape, SHAPE_SIDE)
-
-
-# Точка входа
-if __name__ == '__main__':
-    main(sys.argv[1:])
+if __name__ == "__main__":
+    potential_method = PotentialMethod()
+    potential_method.potential()
+    result = potential_method.get_result()
+    print("Result:")
+    print(result)
