@@ -1,19 +1,37 @@
-import numpy as np
-
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 from __future__ import with_statement
+
+import numpy as np
 import os
-import string
-from os.path import isdir, isfile
+from os.path import isfile
 
 MAX_SIZE = 512
 SHAPE_SIDE = 7
 dictionary = {'-': -1, '@': 1}
+back_ictionary = {-1: '-', 1: '@'}
 SHAPES_PATH = "known_shapes"
-INPUT_PATH = "modified_shapes/modified.txt"
+INPUT_PATH = "modified_shapes"
+
+
+def charfor(x):
+    return dictionary[x]
+
+
+def printshape(obraz, size):
+    i = 0
+    out_str = ""
+    for o in obraz:
+        out_str += str(back_ictionary[o])
+        i += 1
+        if i % size == 0:
+            print(out_str)
+            out_str = ""
+
 
 #
-# Считывает фигуры из файлов и возвращает
-# список из их элементов
+# пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+# пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 #
 def parse(dir):
     shapes_files = []
@@ -30,8 +48,8 @@ def parse(dir):
 
 
 #
-# Считывает файл с фигурой и преобразует
-# в список
+# пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+# пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
 #
 def parse_shape(path):
     with open(path) as f:
@@ -55,9 +73,9 @@ class PotentialMethod:
 
     def get_result(self):
         print("Input:")
-        print(self.input)
+        printshape(self.input, SHAPE_SIDE)
 
-        # Найти наибольший потенциал
+        # пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         max_p = -1
         idx_max_p = -1
         for i, p in enumerate(self.Ps):
@@ -77,13 +95,12 @@ class PotentialMethod:
 
     def compare(self, b1, b2):
         count = 0
-        assert len(b1) == len(b2)  # Размеры сравниваемых фигур равны
-        n = len(b1)
+        assert len(b1) == len(b2)  # пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
         b1_pixels = self.to_pixels(b1)
         b2_pixels = self.to_pixels(b2)
 
-        for i in range(n):
-            for j in range(n):
+        for i in range(7):
+            for j in range(7):
                 if b1_pixels[i][j] != b2_pixels[i][j]:
                     count += 1
 
@@ -106,4 +123,4 @@ if __name__ == "__main__":
     potential_method.potential()
     result = potential_method.get_result()
     print("Result:")
-    print(result)
+    printshape(result, SHAPE_SIDE)
